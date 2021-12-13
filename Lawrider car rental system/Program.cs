@@ -39,7 +39,7 @@ namespace Lawrider_car_rental_system
             int choice = 0;
             do
             {
-                loadData(garageFileName);
+                loadGarageData(garageFileName);
                 choice = readInt("Choose an option between {0} and {1}", 2, 1);
 
             } while (choice != 2);
@@ -133,7 +133,7 @@ namespace Lawrider_car_rental_system
         }
 
 
-        static Dictionary<string, Vehicle> loadData(string file)            //load the data from the database
+        static Dictionary<string, Vehicle> loadGarageData(string file)            //load the data from the database
         {
             file = garageFileName;
 
@@ -142,21 +142,28 @@ namespace Lawrider_car_rental_system
                 fileExistCheckAndCreate();
             }
 
-            string[] linesArray = File.ReadAllLines(file);      //read all lines from the text file
+           // string[] linesArray = File.ReadAllLines(file);      //read all lines from the text file
             Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>();
 
-            for (int i = 0; i < linesArray.Length; ++i)
+            /*for (int i = 0; i < linesArray.Length; ++i)
+            {*/
+
+            StreamReader input = new StreamReader(file);
+            int i = 0;
+            while (!input.EndOfStream)
             {
-                string[] valuesArray = linesArray[i].Split(' ');
-                loadMe[valuesArray[0]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));  
+                string line = input.ReadLine();
+                if (line != "")
+                {
+                    
+                    string[] valuesArray = line.Split(',');
+                    loadMe[valuesArray[0]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));
+                    ++i;
+                    Console.WriteLine(loadMe.Keys);
+                }
             }
-            Console.Write("data loaded!!!!!!!!!");
+            input.Close();
             return loadMe;
-
-            //FileStream inputFileStream = File.OpenRead(file);
-            //Dictionary<string, Vehicle>  loadMe = (Dictionary<string, Vehicle>)bf.Deserialize(inputFileStream);
-            //inputFileStream.Close
-
         }
 
         static void fileExistCheckAndCreate()           //method to copy back up database file if its not avilable
