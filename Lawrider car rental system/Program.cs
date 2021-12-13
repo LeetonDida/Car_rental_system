@@ -5,20 +5,47 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Lawrider_car_rental_system
 {
+
+    class Vehicle
+    {
+        private string make;
+        private string model;
+        private int year;
+        private int suitCases;
+        private decimal cost;
+        private decimal fuelCapacity;
+        private bool avilableState;
+        
+
+        public Vehicle(string make, string model,int year, decimal cost, int suitCases, bool state, decimal fuelCapacity)
+        {
+            this.make = make;
+            this.model = model;
+            this.year = year;
+            this.cost = cost;
+            this.suitCases = suitCases;
+            this.avilableState = state;
+            this.fuelCapacity = fuelCapacity;
+
+        }
+    }
+
     class Program
     {
+        const string garageFileName = "files/garage.txt";
+        const string garageFilePath = "files/garage.txt";
         static void Main()
         {
             int choice = 0;
             do
             {
-                displayMainMenu();
-                choice = readInt("Choose an option between {0} and {1}",2, 1);
-                
+                loadData(garageFileName);
+                choice = readInt("Choose an option between {0} and {1}", 2, 1);
+
             } while (choice != 2);
 
         }
-        
+
         static void displayMainMenu()
         {
             Console.WriteLine("-----------------------------------------------------------");
@@ -73,7 +100,7 @@ namespace Lawrider_car_rental_system
             } while (input == "" || check == false);
 
             return num;
-        }                       
+        }
 
         static string readString(string prompt)
         {
@@ -96,41 +123,55 @@ namespace Lawrider_car_rental_system
         {
             Console.WriteLine("-----------------------------------------------------------");
             Console.WriteLine("                  * BOOK A VEHICLE MENU *");
-            Console.WriteLine("1) Search by Make");
-            Console.WriteLine("2) Filter by year");
-            Console.WriteLine("3) Filter by Fuel capacity");
-            Console.WriteLine("4) Filter by price");
-            Console.WriteLine("5) Show all avilable vehicles");
-            Console.WriteLine("6) Go back to main menu");
+            Console.WriteLine("A) Search by Make");
+            Console.WriteLine("B) Filter by year");
+            Console.WriteLine("C) Filter by Fuel capacity");
+            Console.WriteLine("D) Filter by price");
+            Console.WriteLine("E) Show all avilable vehicles");
+            Console.WriteLine("F) Go back to main menu");
             Console.WriteLine("-----------------------------------------------------------");
         }
 
-        /*         static bool checkUp(Dictionary<string, int> yess, string name)
+
+        static Dictionary<string, Vehicle> loadData(string file)            //load the data from the database
         {
-            bool check = yess.ContainsKey(name);
-            if (check == true)
+            file = garageFileName;
+
+            if (!File.Exists(garageFilePath))           //checking if file exist and copying from backup if not
             {
-                return true;
+                fileExistCheckAndCreate();
             }
-            return false;
 
-        }
+            string[] linesArray = File.ReadAllLines(file);      //read all lines from the text file
+            Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>();
 
-        static void save(Dictionary<string, int> saveMe)
-        {
-            BinaryFormatter binary = new BinaryFormatter();
-            FileStream file = File.Create("data.bin");
-            binary.Serialize(file, saveMe);
-            file.Close();
-        }
-
-        static Dictionary<string, int> load()
-        {
-            BinaryFormatter binary = new BinaryFormatter();
-            FileStream file = File.OpenRead("data.bin");
-            Dictionary<string, int> loadMe = (Dictionary<string, int>)binary.Deserialize(file);
-            file.Close();
+            for (int i = 0; i < linesArray.Length; ++i)
+            {
+                string[] valuesArray = linesArray[i].Split(' ');
+                loadMe[valuesArray[0]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));  
+            }
+            Console.Write("data loaded!!!!!!!!!");
             return loadMe;
-        }*/
+
+            //FileStream inputFileStream = File.OpenRead(file);
+            //Dictionary<string, Vehicle>  loadMe = (Dictionary<string, Vehicle>)bf.Deserialize(inputFileStream);
+            //inputFileStream.Close
+
+        }
+
+        static void fileExistCheckAndCreate()           //method to copy back up database file if its not avilable
+        {
+            string sourceDirectory = @"back up/" + garageFileName;
+            string destinationDirectory = @"files/" + garageFileName;
+
+            {
+                Console.WriteLine("Something went wrong. Press any key to continue report the issue and continue.");
+                Console.ReadKey();
+
+                File.Copy(sourceDirectory, destinationDirectory);
+
+            }
+        }
+
     }
 }
