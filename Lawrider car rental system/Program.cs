@@ -12,20 +12,19 @@ namespace Lawrider_car_rental_system
             int choice = 0;
             do
             {
-                displayMenu();
-                choice = readInt("Choose an option between {0} and {1}",3, 1);
-
-            } while (choice != 3);
+                displayMainMenu();
+                choice = readInt("Choose an option between {0} and {1}",2, 1);
+                
+            } while (choice != 2);
 
         }
-
-        static void displayMenu()
+        
+        static void displayMainMenu()
         {
             Console.WriteLine("-----------------------------------------------------------");
             Console.WriteLine("                         * MENU *");
             Console.WriteLine("1) Book a vehicle");
-            Console.WriteLine("2) Book a vehicle");
-            Console.WriteLine("3) Logout/Exit");
+            Console.WriteLine("2) Logout/Exit");
             Console.WriteLine("-----------------------------------------------------------");
         }
 
@@ -52,6 +51,30 @@ namespace Lawrider_car_rental_system
             return num;
         }
 
+        static int readInt(string prompt)           //overload for  readInt
+        {
+            string input = "";
+            int num = 0;
+            bool check = false;
+            do
+            {
+                Console.WriteLine(prompt);
+                input = Console.ReadLine();
+                try
+                {
+                    num = int.Parse(input);
+                    check = true;
+                }
+                catch
+                {
+                    Console.WriteLine("Please enter a valid number.");
+                }
+
+            } while (input == "" || check == false);
+
+            return num;
+        }                       
+
         static string readString(string prompt)
         {
             string input = "";
@@ -67,6 +90,19 @@ namespace Lawrider_car_rental_system
             } while (input == "");
 
             return input;
+        }
+
+        static void bookAVehicleMenu()
+        {
+            Console.WriteLine("-----------------------------------------------------------");
+            Console.WriteLine("                  * BOOK A VEHICLE MENU *");
+            Console.WriteLine("1) Search by Make");
+            Console.WriteLine("2) Filter by year");
+            Console.WriteLine("3) Filter by Fuel capacity");
+            Console.WriteLine("4) Filter by price");
+            Console.WriteLine("5) Show all avilable vehicles");
+            Console.WriteLine("6) Go back to main menu");
+            Console.WriteLine("-----------------------------------------------------------");
         }
 
         /*         static bool checkUp(Dictionary<string, int> yess, string name)
