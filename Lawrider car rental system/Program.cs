@@ -15,9 +15,9 @@ namespace Lawrider_car_rental_system
         private decimal cost;
         private decimal fuelCapacity;
         private bool avilableState;
-        
 
-        public Vehicle(string make, string model,int year, decimal cost, int suitCases, bool state, decimal fuelCapacity)
+
+        public Vehicle(string make, string model, int year, decimal cost, int suitCases, bool state, decimal fuelCapacity)
         {
             this.make = make;
             this.model = model;
@@ -27,6 +27,55 @@ namespace Lawrider_car_rental_system
             this.avilableState = state;
             this.fuelCapacity = fuelCapacity;
 
+        }
+
+        // the get and set code below has been looked up on the microsoft official documentation site
+        public string getSetMake
+        {
+            get => make;
+            //set => this.make = value;
+        }
+
+        public string getSetModel
+        {
+            get => model;
+            //set => this.model = value;
+        }
+
+        public int getSetYear
+        {
+            get => year;
+            //set => this.year = value;
+        }
+
+        public int getSetSuitCases
+        {
+            get => suitCases;
+            //set => this.suitCases = value;
+        }
+
+        public decimal getSetCost
+        {
+            get => cost;
+            //set => this.cost = value;
+        }
+
+        public decimal getSetFuelCapacity
+        {
+            get => fuelCapacity;
+            //set => this.fuelCapacity = value;
+        }
+
+        public bool getSetAvilableState
+        {
+            get => avilableState;
+            set
+            {
+                //converting to lower then back to bool
+                string state = value.ToString().ToLower();
+                bool stateBool = Convert.ToBoolean(state);
+                this.avilableState = stateBool;
+            }
         }
     }
 
@@ -39,6 +88,7 @@ namespace Lawrider_car_rental_system
             int choice = 0;
             do
             {
+                displayMainMenu();
                 loadGarageData(garageFileName);
                 choice = readInt("Choose an option between {0} and {1}", 2, 1);
 
@@ -142,24 +192,26 @@ namespace Lawrider_car_rental_system
                 fileExistCheckAndCreate();
             }
 
-           // string[] linesArray = File.ReadAllLines(file);      //read all lines from the text file
             Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>();
-
-            /*for (int i = 0; i < linesArray.Length; ++i)
-            {*/
-
             StreamReader input = new StreamReader(file);
-            int i = 0;
+
             while (!input.EndOfStream)
             {
                 string line = input.ReadLine();
                 if (line != "")
                 {
-                    
+
                     string[] valuesArray = line.Split(',');
-                    loadMe[valuesArray[0]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));
-                    ++i;
-                    Console.WriteLine(loadMe.Keys);
+                    try             //if there is an exception in the loading of the file the execution will continue
+                    {
+                        loadMe[valuesArray[0]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                    
+                    Console.WriteLine(loadMe[valuesArray[0]].getSetMake);
                 }
             }
             input.Close();
