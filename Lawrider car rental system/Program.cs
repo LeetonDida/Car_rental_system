@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Lawrider_car_rental_system
 {
@@ -30,37 +29,37 @@ namespace Lawrider_car_rental_system
         }
 
         // the get and set code below has been looked up on the microsoft official documentation site
-        public string getSetMake
+        public string getMake
         {
             get => make;
             //set => this.make = value;
         }
 
-        public string getSetModel
+        public string getModel
         {
             get => model;
             //set => this.model = value;
         }
 
-        public int getSetYear
+        public int getYear
         {
             get => year;
             //set => this.year = value;
         }
 
-        public int getSetSuitCases
+        public int getSuitCases
         {
             get => suitCases;
             //set => this.suitCases = value;
         }
 
-        public decimal getSetCost
+        public decimal getCost
         {
             get => cost;
             //set => this.cost = value;
         }
 
-        public decimal getSetFuelCapacity
+        public decimal getFuelCapacity
         {
             get => fuelCapacity;
             //set => this.fuelCapacity = value;
@@ -81,19 +80,171 @@ namespace Lawrider_car_rental_system
 
     class Program
     {
-        const string garageFileName = "files/garage.txt";
-        const string garageFilePath = "files/garage.txt";
+        const string garageFileName = "garage.txt";
         static void Main()
         {
             int choice = 0;
             do
             {
+                Dictionary<string, Vehicle> data = new Dictionary<string, Vehicle>();
+                data = loadGarageData(garageFileName);
                 displayMainMenu();
-                loadGarageData(garageFileName);
                 choice = readInt("Choose an option between {0} and {1}", 2, 1);
+
+                switch (choice)
+                {
+                    case 1:
+                        char bookingMenuOption = bookAVehicleMenu();
+                        if (bookingMenuOption == 'A')
+                        {
+                            string make = readString("Enter the prefered vehicle make: ").Trim();
+                            string capitalizedMake = char.ToUpper(make[0]) + make.Substring(1);     //capitalization code modified from stackoverflow (Diego 09/11/2010)
+                            List<string> keys = GetKeyFromValue(capitalizedMake, data);
+                            //if the entered vehicle is not avilable the loop will restart
+                            if (!makeFilter(data, keys))
+                            {
+                                continue;
+                            }
+
+                            int vehicleChoice = readInt("Enter your vehicle choice: ") - 1;
+                            int days = numOfDays();
+                            decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
+
+                            Console.WriteLine("Your total cost for renting {0} {1} will be {2}. Do you wish to continue. (Y/N)", data[keys[vehicleChoice]].getMake, data[keys[vehicleChoice]].getModel, totalCost);
+                            char answer = ' ';
+                            do
+                            {   //prompting user if they want to continue with the booking or not
+                                answer = readChar("\nDo you wish to continue. (Y/N)");
+                                if (answer == 'y' || answer == 'Y')
+                                {
+                                    data[keys[vehicleChoice]].getSetAvilableState = false;          //setting the avilability of the vehicle to false (booked)
+
+                                    printReciept(data, keys, vehicleChoice);
+                                    Console.WriteLine("Your total cost: {0}\nNumber of Days {1}", totalCost, days);
+                                    //insert a saveState() function here
+                                    Console.WriteLine("Press any key to go back to the main menu.");
+                                    Console.ReadKey();
+                                    break;
+                                }
+                                else if (answer == 'n' || answer == 'N')
+                                {
+                                    Console.WriteLine("Press any key to go back to the main menu.");
+                                    Console.ReadKey();
+                                    break;
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Please enter a valid answer Y or N");
+                                }
+                            } while (answer == ' ' || answer != 'n' || answer != 'N' || answer != 'y' || answer != 'Y');
+
+                        }
+                        break;
+                }
 
             } while (choice != 2);
 
+        }
+
+
+        static void fileExistCheckAndCreate()           //method to copy back up database file if its not avilable
+        {
+            string sourceDirectory = @"back up/" + garageFileName;
+            string destinationDirectory = @"files/" + garageFileName;
+
+            {
+                Console.WriteLine("Something went wrong. Press any key to continue report the issue and continue.");
+                Console.ReadKey();
+
+                File.Copy(sourceDirectory, destinationDirectory);
+
+            }
+        }
+
+        /* static bool dictionaryKeyCheckUp(Dictionary<string, Vehicle> yess, string name)
+         {
+             bool check = yess.ContainsKey(name);
+             if (check == true)
+             {
+                 return true;
+             }
+             return false;
+
+         }*/
+
+        static bool makeFilter(Dictionary<string, Vehicle> data, List<string> keys)
+        {
+            bool check = false;
+            if (keys.Count == 0)
+            {
+                Console.Write("Sorry we do not have your desired vehicle make, please search for another one.\n");
+                check = false;
+            }
+            else
+            {
+                printGarageDictionary(data, keys);
+                check = true;
+            }
+            return check;
+        }
+
+        static List<string> GetKeyFromValue(string valueVar, Dictionary<string, Vehicle> searchDict)
+        {
+            List<string> listOfKeys = new List<string>();
+
+            //loop to get keys from values into a list
+            foreach (string keyVar in searchDict.Keys)
+            {
+                string valueFomKey = searchDict[keyVar].getMake;
+                if (valueFomKey == valueVar)
+                {
+                    listOfKeys.Add(keyVar);
+                }
+            }
+            return listOfKeys;
+        }
+
+        static decimal calculateCost(Dictionary<string, Vehicle> data, List<string> key, int choice, int days)
+        {
+            decimal totalCost = data[key[choice]].getCost * (decimal)days;
+            return totalCost;
+        }
+
+        static int numOfDays()
+        {
+            int numOfDays = readInt("Enter the number of days you want to rent the car for (Max 30 days): ", 30, 1);
+            return numOfDays;
+        }
+
+        static string returnChoice(List<string> key, int choice, Dictionary<string, Vehicle> data)            //function to return the selected vehicle for printing reciept
+        {
+            return key[choice];
+        }
+
+        static char bookAVehicleMenu()
+        {
+            Console.WriteLine("-----------------------------------------------------------");
+            Console.WriteLine("                  * BOOK A VEHICLE MENU *");
+            Console.WriteLine("A) Search by Make");
+            Console.WriteLine("B) Filter by year");
+            Console.WriteLine("C) Filter by Fuel capacity");
+            Console.WriteLine("D) Filter by price");
+            Console.WriteLine("E) Show all avilable vehicles");
+            Console.WriteLine("F) Go back to main menu");
+            Console.WriteLine("-----------------------------------------------------------");
+
+            char choice = readChar("Enter an option: ");
+            return choice;
+        }
+        static void printGarageDictionary(Dictionary<string, Vehicle> searchDict, List<string> key)
+        {
+            Console.WriteLine("Make     | " + " Model     | " + "Year     | " + "Fuel capacity     | " + "Suit cases     | " + "Cost/day |");
+            int count = key.Count;
+
+            for (int i = 0; i < count; ++i)
+            {
+                Console.WriteLine(i + 1 + ") " + searchDict[key[i]].getMake + "   |  " + searchDict[key[i]].getModel + "    | " + searchDict[key[i]].getYear + "     |  " + searchDict[key[i]].getFuelCapacity + "             |  " + searchDict[key[i]].getSuitCases + "            |  " + searchDict[key[i]].getCost);
+            }
         }
 
         static void displayMainMenu()
@@ -169,31 +320,18 @@ namespace Lawrider_car_rental_system
             return input;
         }
 
-        static void bookAVehicleMenu()
-        {
-            Console.WriteLine("-----------------------------------------------------------");
-            Console.WriteLine("                  * BOOK A VEHICLE MENU *");
-            Console.WriteLine("A) Search by Make");
-            Console.WriteLine("B) Filter by year");
-            Console.WriteLine("C) Filter by Fuel capacity");
-            Console.WriteLine("D) Filter by price");
-            Console.WriteLine("E) Show all avilable vehicles");
-            Console.WriteLine("F) Go back to main menu");
-            Console.WriteLine("-----------------------------------------------------------");
-        }
-
-
         static Dictionary<string, Vehicle> loadGarageData(string file)            //load the data from the database
         {
-            file = garageFileName;
+            //file = garageFileName;
+            string filePath = @"files/" + file;
 
-            if (!File.Exists(garageFilePath))           //checking if file exist and copying from backup if not
+            if (!File.Exists(filePath))           //checking if file exist and copying from backup if not
             {
                 fileExistCheckAndCreate();
             }
 
             Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>();
-            StreamReader input = new StreamReader(file);
+            StreamReader input = new StreamReader(filePath);
 
             while (!input.EndOfStream)
             {
@@ -204,33 +342,50 @@ namespace Lawrider_car_rental_system
                     string[] valuesArray = line.Split(',');
                     try             //if there is an exception in the loading of the file the execution will continue
                     {
-                        loadMe[valuesArray[0]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));
+                        loadMe[valuesArray[1]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));
                     }
                     catch
                     {
                         continue;
                     }
-                    
-                    Console.WriteLine(loadMe[valuesArray[0]].getSetMake);
+                    //Console.WriteLine(loadMe[valuesArray[0]].getMake);
                 }
+
             }
             input.Close();
             return loadMe;
         }
 
-        static void fileExistCheckAndCreate()           //method to copy back up database file if its not avilable
+        static char readChar(string prompt)         //come back and fix the int issue
         {
-            string sourceDirectory = @"back up/" + garageFileName;
-            string destinationDirectory = @"files/" + garageFileName;
-
+            char op = ' ';
+            string option = " ";
+            bool check = false;
+            do
             {
-                Console.WriteLine("Something went wrong. Press any key to continue report the issue and continue.");
-                Console.ReadKey();
+                Console.WriteLine(prompt);
+                option = Console.ReadLine().ToUpper().Trim();
 
-                File.Copy(sourceDirectory, destinationDirectory);
+                try
+                {
+                    check = char.TryParse(option, out op);
 
-            }
+                }
+                catch
+                {
+                    Console.WriteLine("Please enter one character from the above options.");
+                }
+
+            } while (option == " " || check == false || !char.IsLetter(op));
+            return op;
         }
 
+        static void printReciept(Dictionary<string, Vehicle> searchDict, List<string> key, int choice)
+        {
+            Console.WriteLine("--------------------------------------------RECIEPT----------------------------------------------------------\n");
+            Console.WriteLine("Make     | " + " Model     | " + "Year     | " + "Fuel capacity     | " + "Suit cases     | " + "Cost/day |");
+            Console.WriteLine("1) " + searchDict[key[choice]].getMake + "   |  " + searchDict[key[choice]].getModel + "    | " + searchDict[key[choice]].getYear + "     |  " + searchDict[key[choice]].getFuelCapacity + "             |  " + searchDict[key[choice]].getSuitCases + "            |  " + searchDict[key[choice]].getCost);
+            Console.WriteLine("\n-----------------------------------------THANK YOU-----------------------------------------------------------");
+        }
     }
 }
