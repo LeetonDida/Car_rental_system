@@ -81,6 +81,8 @@ namespace Lawrider_car_rental_system
     class Program
     {
         const string garageFileName = "garage.txt";
+        const int MaximumVehicleYears = 2012;
+        const int MinimumVehicleYears = 1983;
         static void Main()
         {
             int choice = 0;
@@ -95,6 +97,7 @@ namespace Lawrider_car_rental_system
                 {
                     case 1:
                         char bookingMenuOption = bookAVehicleMenu();
+
                         if (bookingMenuOption == 'A')
                         {
                             string make = readString("Enter the prefered vehicle make: ").Trim();
@@ -110,35 +113,36 @@ namespace Lawrider_car_rental_system
                             int days = numOfDays();
                             decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
 
-                            Console.WriteLine("Your total cost for renting {0} {1} will be {2}. Do you wish to continue. (Y/N)", data[keys[vehicleChoice]].getMake, data[keys[vehicleChoice]].getModel, totalCost);
-                            char answer = ' ';
-                            do
-                            {   //prompting user if they want to continue with the booking or not
-                                answer = readChar("\nDo you wish to continue. (Y/N)");
-                                if (answer == 'y' || answer == 'Y')
-                                {
-                                    data[keys[vehicleChoice]].getSetAvilableState = false;          //setting the avilability of the vehicle to false (booked)
-
-                                    printReciept(data, keys, vehicleChoice);
-                                    Console.WriteLine("Your total cost: {0}\nNumber of Days {1}", totalCost, days);
-                                    //insert a saveState() function here
-                                    Console.WriteLine("Press any key to go back to the main menu.");
-                                    Console.ReadKey();
-                                    break;
-                                }
-                                else if (answer == 'n' || answer == 'N')
-                                {
-                                    Console.WriteLine("Press any key to go back to the main menu.");
-                                    Console.ReadKey();
-                                    break;
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Please enter a valid answer Y or N");
-                                }
-                            } while (answer == ' ' || answer != 'n' || answer != 'N' || answer != 'y' || answer != 'Y');
+                            concludeBooking(data, keys, vehicleChoice, totalCost, days);
 
                         }
+                        else if (bookingMenuOption == 'B')
+                        {
+                            Console.WriteLine("Enter the range of years you want to view from 2012 - 1983");
+                            int minYear, maxYear = 0;
+                            do
+                            {       //fix this maximum and minimum issue when you get your arse back from work
+                                maxYear = readInt("Maximum year: ", MaximumVehicleYears, MinimumVehicleYears);
+                                minYear = readInt("Minimum year: ", MaximumVehicleYears, MinimumVehicleYears);
+                                if (maxYear < minYear)
+                                {
+                                    Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
+                                }
+
+                            } while (maxYear < minYear);
+                            List<string> keys = GetKeyFromValue(data, minYear, maxYear);
+                            if (keys.Count == 0)
+                            {
+                                Console.Write("Sorry we do not have vehicles between the desired range, please try again with a different range.\n");
+                                continue;
+                            }
+                            int vehicleChoice = yearFilter(data, keys) - 1;
+                            int days = numOfDays();
+                            decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
+
+                            concludeBooking(data, keys, vehicleChoice, totalCost, days);
+                        }
+
                         break;
                 }
 
@@ -146,7 +150,61 @@ namespace Lawrider_car_rental_system
 
         }
 
+        static void concludeBooking(Dictionary<string, Vehicle> data, List<string> keys, int vehicleChoice, decimal totalCost, int days)
+        {
+            Console.WriteLine("Your total cost for renting {0} {1} will be {2}. Do you wish to continue. (Y/N)", data[keys[vehicleChoice]].getMake, data[keys[vehicleChoice]].getModel, totalCost);
+            char answer = ' ';
+            //bool check = false;
+            do
+            {   //prompting user if they want to continue with the booking or not
+                answer = readChar("\nDo you wish to continue. (Y/N)");
+                if (answer == 'y' || answer == 'Y')
+                {
+                    data[keys[vehicleChoice]].getSetAvilableState = false;          //setting the avilability of the vehicle to false (booked)
 
+                    printReciept(data, keys, vehicleChoice);
+                    Console.WriteLine("Your total cost: {0}\nNumber of Days {1}", totalCost, days);
+                    //insert a saveState() function here
+                    Console.WriteLine("Press any key to go back to the main menu.");
+                    Console.ReadKey();
+                    //check = true;
+                    break;
+                }
+                else if (answer == 'n' || answer == 'N')
+                {
+                    Console.WriteLine("Press any key to go back to the main menu.");
+                    Console.ReadKey();
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Please enter a valid answer Y or N");
+                }
+            } while (answer == ' ' || answer != 'n' || answer != 'N' || answer != 'y' || answer != 'Y');
+
+        }
+        static char bookAVehicleMenu()
+        {
+            Console.WriteLine("-----------------------------------------------------------");
+            Console.WriteLine("                  * BOOK A VEHICLE MENU *");
+            Console.WriteLine("A) Search by Make");
+            Console.WriteLine("B) Filter by year");
+            Console.WriteLine("C) Filter by Fuel capacity");
+            Console.WriteLine("D) Filter by price");
+            Console.WriteLine("E) Show all avilable vehicles");
+            Console.WriteLine("F) Go back to main menu");
+            Console.WriteLine("-----------------------------------------------------------");
+
+            char choice = readChar("Enter an option: ");
+            return choice;
+        }
+
+        static int yearFilter(Dictionary<string, Vehicle> data, List<string> keys)
+        {
+            printGarageDictionary(data, keys);
+            int choice = readInt("Enter your choice from the vehicles above: ");
+            return choice;
+        }
         static void fileExistCheckAndCreate()           //method to copy back up database file if its not avilable
         {
             string sourceDirectory = @"back up/" + garageFileName;
@@ -202,6 +260,22 @@ namespace Lawrider_car_rental_system
                 }
             }
             return listOfKeys;
+        }           //overload for filtering by make
+
+        static List<string> GetKeyFromValue(Dictionary<string, Vehicle> searchDict, int min, int max)           //overload for filtering by year
+        {
+            List<string> listOfKeys = new List<string>();
+
+            //loop to get keys from values into a list
+            foreach (string keyVar in searchDict.Keys)
+            {
+                int valueFomKey = searchDict[keyVar].getYear;
+                if (valueFomKey < max || valueFomKey > min)
+                {
+                    listOfKeys.Add(keyVar);
+                }
+            }
+            return listOfKeys;
         }
 
         static decimal calculateCost(Dictionary<string, Vehicle> data, List<string> key, int choice, int days)
@@ -221,21 +295,6 @@ namespace Lawrider_car_rental_system
             return key[choice];
         }
 
-        static char bookAVehicleMenu()
-        {
-            Console.WriteLine("-----------------------------------------------------------");
-            Console.WriteLine("                  * BOOK A VEHICLE MENU *");
-            Console.WriteLine("A) Search by Make");
-            Console.WriteLine("B) Filter by year");
-            Console.WriteLine("C) Filter by Fuel capacity");
-            Console.WriteLine("D) Filter by price");
-            Console.WriteLine("E) Show all avilable vehicles");
-            Console.WriteLine("F) Go back to main menu");
-            Console.WriteLine("-----------------------------------------------------------");
-
-            char choice = readChar("Enter an option: ");
-            return choice;
-        }
         static void printGarageDictionary(Dictionary<string, Vehicle> searchDict, List<string> key)
         {
             Console.WriteLine("Make     | " + " Model     | " + "Year     | " + "Fuel capacity     | " + "Suit cases     | " + "Cost/day |");
