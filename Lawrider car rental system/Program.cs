@@ -83,6 +83,8 @@ namespace Lawrider_car_rental_system
         const string garageFileName = "garage.txt";
         const int MaximumVehicleYears = 2012;
         const int MinimumVehicleYears = 1983;
+        const decimal MaxFuelCapacity = 39.86m;
+        const decimal MinFuelCapacity = 10.64m;
         static void Main()
         {
             int choice = 0;
@@ -113,7 +115,7 @@ namespace Lawrider_car_rental_system
                                 printGarageDictionary(data, keys);
                             }
 
-                            int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", keys.Count, 0, "Please enter a valid vehicle choice.") - 1;
+                            int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", keys.Count, 1, "Please enter a valid vehicle choice.") - 1;
 
                             //if the entered vehicle is not avilable in the keys the loop will restart
                             if (!checkKey(data, keys, vehicleChoice, "Sorry we do not have your desired vehicle make, please search for another one.\n"))
@@ -129,7 +131,7 @@ namespace Lawrider_car_rental_system
                         }
                         else if (bookingMenuOption == 'B')
                         {
-                            Console.WriteLine("Enter the range of years you want to view from {0} - {1}", MaximumVehicleYears, MinimumVehicleYears);
+                            /*Console.WriteLine("Enter the range of years you want to view from {0} - {1}", MaximumVehicleYears, MinimumVehicleYears);
                             int minYear = 0;
                             int maxYear = 0;
                             do
@@ -156,17 +158,79 @@ namespace Lawrider_car_rental_system
                             int days = numOfDays();
                             decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
 
-                            concludeBooking(data, keys, vehicleChoice, totalCost, days);
+                            concludeBooking(data, keys, vehicleChoice, totalCost, days);*/
+
+                            int minYear;
+                            int maxYear;
+
+                            do
+                            {       //fix this maximum and minimum issue when you get your arse back from work
+                                maxYear = readInt("Please enter maximum year between " + MaximumVehicleYears + " and " + MinimumVehicleYears + ": ", MaximumVehicleYears, MinimumVehicleYears, "Please enter a year between the given bounds.");
+                                minYear = readInt("Please enter minimum year between " + maxYear + " and " + MinimumVehicleYears + ": ", maxYear, MinimumVehicleYears, "Please enter a year between the given bounds.");
+
+                                if (maxYear < minYear)
+                                {
+                                    Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
+                                    continue;
+                                }
+
+                            } while (maxYear < minYear || maxYear > MaximumVehicleYears || minYear < MinimumVehicleYears);
+
+                            List<string> keys = GetKeyFromValue(data, minYear, maxYear);
+                            rangeFilters(data, keys, maxYear, minYear, "Year");
                         }
                         else if (bookingMenuOption == 'C')
                         {
+                            decimal maxCapacity, minCapacity;
 
+                            do
+                            {   
+                                maxCapacity = readDecimal("Please enter a maximum fuel capacity range between " + MaxFuelCapacity + " and " + MinFuelCapacity + ": ", MaxFuelCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
+                                minCapacity = readDecimal("Please enter a minimum fuel capacity range between " + maxCapacity + " and " + MinFuelCapacity + ": ", maxCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
+
+                                if (maxCapacity < minCapacity)
+                                {
+                                    Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
+                                    continue;
+                                }
+
+                            } while (maxCapacity < minCapacity || maxCapacity > MaxFuelCapacity || minCapacity < MinFuelCapacity);
+
+                            List<string> keys = GetKeyFromValue(data, decimal.ToInt32(maxCapacity),  decimal.ToInt32(minCapacity));
+
+                            if (keys.Count == 0)
+                            {
+                                Console.WriteLine("Sorry we do not have vehicles between the desired range, please try again with a different range.\n");
+                                continue;
+                            }
+                            else
+                            {
+                                rangeFilters(data, keys, maxCapacity, minCapacity, "fuel capacity");
+                            }
+                            
                         }
                         break;
                 }
 
             } while (choice != 2);
 
+        }
+
+
+
+        static void rangeFilters(Dictionary<string, Vehicle> data, List<string> keys, decimal maxRange, decimal minRange, string filterName)
+        {
+             
+            printGarageDictionary(data, keys);
+            int vehicleChoice = readInt("Enter your choice from the vehicles above: ", keys.Count, 0, "Please enter a valid vehicle choice.") - 1;
+
+            //checking the key in the dictionary 
+            if (checkKey(data, keys, vehicleChoice, "Sorry we do not have vehicles between the desired range, please try again with a different range.\n"))
+            {
+                int days = numOfDays();
+                decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
+                concludeBooking(data, keys, vehicleChoice, totalCost, days);
+            }
         }
 
 
@@ -186,10 +250,9 @@ namespace Lawrider_car_rental_system
             return choice;
         }
 
-
         static bool checkKey(Dictionary<string, Vehicle> data, List<string> keys, int vehicleChoice, string error)
         {
-            if (keys.Count == 0 || !data.ContainsKey(keys[vehicleChoice]) || vehicleChoice > keys.Count)
+            if (keys.Count == 0 || !data.ContainsKey(keys[vehicleChoice]) || vehicleChoice > keys.Count || vehicleChoice <= -1)
             {
                 Console.Write(error);
                 return false;
@@ -270,7 +333,7 @@ namespace Lawrider_car_rental_system
             foreach (string keyVar in searchDict.Keys)
             {
                 int valueFomKey = searchDict[keyVar].getYear;
-                if (valueFomKey <= max && valueFomKey >= min)
+                if (valueFomKey <= (int)max && valueFomKey >= (int)min)
                 {
                     listOfKeys.Add(keyVar);
                 }
@@ -322,6 +385,33 @@ namespace Lawrider_car_rental_system
             Console.WriteLine("1) Book a vehicle");
             Console.WriteLine("2) Logout/Exit");
             Console.WriteLine("-----------------------------------------------------------");
+        }
+
+        static decimal readDecimal(string prompt, decimal high, decimal low, string error)
+        {
+            string input = "";
+            decimal num = 0;
+
+            do
+            {
+                Console.WriteLine(prompt, low, high);
+                input = Console.ReadLine();
+                try
+                {
+                    num = decimal.Parse(input);
+                    if (num > high || num < low)
+                    {
+                        Console.WriteLine(error);
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine(error);
+                }
+
+            } while (input == "" || num > high || num < low);
+
+            return num;
         }
 
         static int readInt(string prompt, int high, int low, string error)
