@@ -85,6 +85,8 @@ namespace Lawrider_car_rental_system
         const int MinimumVehicleYears = 1983;
         const decimal MaxFuelCapacity = 39.86m;
         const decimal MinFuelCapacity = 10.64m;
+        const decimal MaxPrice = 236.252m;
+        const decimal MinPrice = 11.548m;
         static void Main()
         {
             int choice = 0;
@@ -105,7 +107,7 @@ namespace Lawrider_car_rental_system
                             string make = readString("Enter the prefered vehicle make: ", "Please enter a vehicle make.").Trim();
                             string capitalizedMake = char.ToUpper(make[0]) + make.Substring(1);     //capitalization code modified from stackoverflow (Diego 09/11/2010)
                             List<string> keys = GetKeyFromValue(capitalizedMake, data);
-                            if(keys.Count == 0)
+                            if (keys.Count == 0)
                             {
                                 Console.WriteLine("Sorry we do not have your desired vehicle make, please search for another one.\n");
                                 continue;
@@ -177,14 +179,15 @@ namespace Lawrider_car_rental_system
                             } while (maxYear < minYear || maxYear > MaximumVehicleYears || minYear < MinimumVehicleYears);
 
                             List<string> keys = GetKeyFromValue(data, minYear, maxYear);
-                            rangeFilters(data, keys, maxYear, minYear, "Year");
+                            intRangeFilters(data, keys);
                         }
                         else if (bookingMenuOption == 'C')
                         {
                             decimal maxCapacity, minCapacity;
+                            string filter = "fuel capacity";
 
                             do
-                            {   
+                            {
                                 maxCapacity = readDecimal("Please enter a maximum fuel capacity range between " + MaxFuelCapacity + " and " + MinFuelCapacity + ": ", MaxFuelCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
                                 minCapacity = readDecimal("Please enter a minimum fuel capacity range between " + maxCapacity + " and " + MinFuelCapacity + ": ", maxCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
 
@@ -196,7 +199,7 @@ namespace Lawrider_car_rental_system
 
                             } while (maxCapacity < minCapacity || maxCapacity > MaxFuelCapacity || minCapacity < MinFuelCapacity);
 
-                            List<string> keys = GetKeyFromValue(data, decimal.ToInt32(maxCapacity),  decimal.ToInt32(minCapacity));
+                            List<string> keys = GetKeyFromValue(data, decimal.Round( maxCapacity), decimal.Round(minCapacity), filter);
 
                             if (keys.Count == 0)
                             {
@@ -205,11 +208,42 @@ namespace Lawrider_car_rental_system
                             }
                             else
                             {
-                                rangeFilters(data, keys, maxCapacity, minCapacity, "fuel capacity");
+                                intRangeFilters(data, keys);
+                            }
+
+                        }
+                        else if (bookingMenuOption == 'D')
+                        {
+                            decimal maxPrice, minPrice;
+                            string filter = "price";
+                            do
+                            {
+                                maxPrice = readDecimal("Please enter a maximum price between " + MaxPrice + " and " + MinPrice + ": ", MaxPrice, MinPrice, "Please enter a price between the given bounds.");
+                                minPrice = readDecimal("Please enter a minimum price between " + maxPrice + " and " + MinPrice + ": ", maxPrice, MinPrice, "Please enter a price between the given bounds.");
+
+                                if (maxPrice < minPrice)
+                                {
+                                    Console.WriteLine("Maximum price can not be less than the minimum price. Try reversing your answers.");
+                                    continue;
+                                }
+
+                            } while (maxPrice < minPrice || maxPrice > MaxPrice || minPrice < MinPrice);
+
+                            List<string> keys = GetKeyFromValue(data, decimal.Round(maxPrice), decimal.Round(minPrice), filter);
+
+                            if (keys.Count == 0)
+                            {
+                                Console.WriteLine("Sorry we do not have vehicles between the desired range, please try again with a different range.\n");
+                                continue;
+                            }
+                            else
+                            {
+                                intRangeFilters(data, keys);
                             }
                             
+
                         }
-                        break;
+                            break;
                 }
 
             } while (choice != 2);
@@ -217,22 +251,23 @@ namespace Lawrider_car_rental_system
         }
 
 
-
-        static void rangeFilters(Dictionary<string, Vehicle> data, List<string> keys, decimal maxRange, decimal minRange, string filterName)
+        static void intRangeFilters(Dictionary<string, Vehicle> data, List<string> keys)
         {
-             
+
             printGarageDictionary(data, keys);
-            int vehicleChoice = readInt("Enter your choice from the vehicles above: ", keys.Count, 0, "Please enter a valid vehicle choice.") - 1;
-
-            //checking the key in the dictionary 
-            if (checkKey(data, keys, vehicleChoice, "Sorry we do not have vehicles between the desired range, please try again with a different range.\n"))
+            int vehicleChoice = readInt("Enter your choice from the vehicles above: ", keys.Count, 1, "Please enter a valid vehicle choice.") - 1;
+            if (checkKey(data, keys, vehicleChoice, "Sorry we do not have your desired vehicle make, please search for another one.\n"))
             {
-                int days = numOfDays();
-                decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
-                concludeBooking(data, keys, vehicleChoice, totalCost, days);
+                //checking the key in the dictionary 
+                if (checkKey(data, keys, vehicleChoice, "Sorry we do not have vehicles between the desired range, please try again with a different range.\n"))
+                {
+                    int days = numOfDays();
+                    decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
+                    concludeBooking(data, keys, vehicleChoice, totalCost, days);
+                }
             }
-        }
 
+        }
 
         static char bookAVehicleMenu()
         {
@@ -294,21 +329,6 @@ namespace Lawrider_car_rental_system
         }
 
 
-        /*static bool makeFilter(Dictionary<string, Vehicle> data, List<string> keys)
-        {
-            bool check = false;
-            if (keys.Count == 0)
-            {
-                Console.Write();
-                check = false;
-            }
-            else
-            {
-                check = true;
-            }
-            return check;
-        }*/
-
         static List<string> GetKeyFromValue(string valueVar, Dictionary<string, Vehicle> searchDict)
         {
             List<string> listOfKeys = new List<string>();
@@ -325,7 +345,7 @@ namespace Lawrider_car_rental_system
             return listOfKeys;
         }           //overload for filtering by make
 
-        static List<string> GetKeyFromValue(Dictionary<string, Vehicle> searchDict, int min, int max)           //overload for filtering by year
+        static List<string> GetKeyFromValue(Dictionary<string, Vehicle> searchDict, int min, int max)           //overload for filtering by int range
         {
             List<string> listOfKeys = new List<string>();
 
@@ -334,6 +354,31 @@ namespace Lawrider_car_rental_system
             {
                 int valueFomKey = searchDict[keyVar].getYear;
                 if (valueFomKey <= (int)max && valueFomKey >= (int)min)
+                {
+                    listOfKeys.Add(keyVar);
+                }
+            }
+            return listOfKeys;
+        }
+
+        static List<string> GetKeyFromValue(Dictionary<string, Vehicle> searchDict, decimal max, decimal min, string filterName)           //overload for filtering by decimal range
+        {
+            List<string> listOfKeys = new List<string>();
+            decimal valueFomKey = -1;
+
+            //loop to get keys from values into a list by setting the value to be used to filter the keys
+            foreach (string keyVar in searchDict.Keys)
+            {
+                if (filterName == "fuel capacity")
+                {
+                    valueFomKey = decimal.Round(searchDict[keyVar].getFuelCapacity);
+                }
+                else if (filterName == "price")
+                {
+                    valueFomKey = decimal.Round(searchDict[keyVar].getCost);
+                }
+
+                if (valueFomKey <= max && valueFomKey >= min)
                 {
                     listOfKeys.Add(keyVar);
                 }
