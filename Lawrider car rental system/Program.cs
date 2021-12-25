@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Lawrider_car_rental_system
 {
-
+    [Serializable]
     class Vehicle
     {
         private string make;
@@ -15,7 +16,7 @@ namespace Lawrider_car_rental_system
         private decimal fuelCapacity;
         private bool avilableState;
 
-
+        
         public Vehicle(string make, string model, int year, decimal cost, int suitCases, bool state, decimal fuelCapacity)
         {
             this.make = make;
@@ -87,13 +88,16 @@ namespace Lawrider_car_rental_system
         const decimal MinFuelCapacity = 10.64m;
         const decimal MaxPrice = 236.252m;
         const decimal MinPrice = 11.548m;
+        const string garageFilePath = @"files/" + garageFileName;
         static void Main()
         {
             int choice = 0;
             do
             {
                 Dictionary<string, Vehicle> data = new Dictionary<string, Vehicle>();
-                data = loadGarageData(garageFileName);
+                
+                data = loadGarageData(data, garageFileName);
+                //save(data, garageFilePath);
                 displayMainMenu();
                 choice = readInt("Choose an option between {0} and {1}", 2, 1, "Please enter a valid choice from the menu above.");
 
@@ -133,34 +137,6 @@ namespace Lawrider_car_rental_system
                         }
                         else if (bookingMenuOption == 'B')
                         {
-                            /*Console.WriteLine("Enter the range of years you want to view from {0} - {1}", MaximumVehicleYears, MinimumVehicleYears);
-                            int minYear = 0;
-                            int maxYear = 0;
-                            do
-                            {       //fix this maximum and minimum issue when you get your arse back from work
-                                maxYear = readInt("Please enter maximum year between " + MaximumVehicleYears + " and " + MinimumVehicleYears + ": ", MaximumVehicleYears, MinimumVehicleYears, "Please enter a year between the given bounds.");
-                                minYear = readInt("Please enter minimum year between " + maxYear + " and " + MinimumVehicleYears + ": ", maxYear, MinimumVehicleYears, "Please enter a year between the given bounds.");
-
-                                if (maxYear < minYear)
-                                {
-                                    Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
-                                    continue;
-                                }
-
-                            } while (maxYear < minYear || maxYear > MaximumVehicleYears || minYear < MinimumVehicleYears);
-                            List<string> keys = GetKeyFromValue(data, minYear, maxYear);
-                            printGarageDictionary(data, keys);
-                            int vehicleChoice = readInt("Enter your choice from the vehicles above: ", keys.Count, 0, "Please enter a valid vehicle choice.");
-                            //checking the key in the dictionary 
-                            if (!checkKey(data, keys, vehicleChoice, "Sorry we do not have vehicles between the desired range, please try again with a different range.\n"))
-                            {
-                                continue;
-                            }
-
-                            int days = numOfDays();
-                            decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
-
-                            concludeBooking(data, keys, vehicleChoice, totalCost, days);*/
 
                             int minYear;
                             int maxYear;
@@ -240,17 +216,88 @@ namespace Lawrider_car_rental_system
                             {
                                 intRangeFilters(data, keys);
                             }
-                            
+                        }
+                        else if (bookingMenuOption == 'E')
+                        {
+                            List<string> keys = new List<string>(data.Keys);
+                            keys.Sort();
+                            printGarageDictionary(data, keys);
 
+                            int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", keys.Count, 1, "Please enter a valid vehicle choice.") - 1;
+                            int days = numOfDays();
+                            decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
+                            concludeBooking(data, keys, vehicleChoice, totalCost, days);
+                        }
+                        else if (bookingMenuOption == 'F')
+                        {
+                            continue;
                         }
                             break;
                 }
 
             } while (choice != 2);
-
+        }
+        public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false)
+        {
+            using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create))
+            {
+                var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                binaryFormatter.Serialize(stream, objectToWrite);
+            }
         }
 
+        static void save(Dictionary<string, Vehicle> data, string filePath)
+        {
+            FileStream myFile = File.Create(filePath);
+            BinaryFormatter binary = new BinaryFormatter();
+            binary.Serialize(myFile, data);
+            myFile.Close();
+        }
 
+        static Dictionary<string, Vehicle> load(string filePath)
+        {
+            BinaryFormatter binary = new BinaryFormatter();
+            FileStream myFile = File.OpenRead(filePath);
+            Dictionary<string, Vehicle> loadedData = (Dictionary<string, Vehicle>) binary.Deserialize(myFile);
+            myFile.Close();
+            return loadedData;
+        }
+
+        static Dictionary<string, Vehicle> loadGarageData(Dictionary<string, Vehicle> data, string file)            //load the data from the database
+        {
+            //file = garageFileName;
+            string filePath = @"files/" + file;
+
+            if (!File.Exists(filePath))           //checking if file exist and copying from backup if not
+            {
+                fileExistCheckAndCreate();
+            }
+
+            //the code below calls a function which deserialises the file
+            Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>(); //load(filePath);
+            StreamReader input = new StreamReader(filePath);
+
+            while (!input.EndOfStream)
+            {
+                string line = input.ReadLine();
+                if (line != "")
+                {
+
+                    string[] valuesArray = line.Split(',');
+                    try             //if there is an exception in the loading of the file the execution will continue (eg if there are not enough values in a line)
+                    {
+                        loadMe[valuesArray[1]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+            }
+            input.Close();
+            return loadMe;
+        }
         static void intRangeFilters(Dictionary<string, Vehicle> data, List<string> keys)
         {
 
@@ -298,7 +345,6 @@ namespace Lawrider_car_rental_system
         {
             Console.WriteLine("Your total cost for renting {0} {1} will be {2}. Do you wish to continue. (Y/N)", data[keys[vehicleChoice]].getMake, data[keys[vehicleChoice]].getModel, totalCost);
             char answer = ' ';
-            //bool check = false;
             do
             {   //prompting user if they want to continue with the booking or not
                 answer = readChar("\nDo you wish to continue. (Y/N)", "Please enter one character from the above options.");
@@ -308,10 +354,11 @@ namespace Lawrider_car_rental_system
 
                     printReciept(data, keys, vehicleChoice);
                     Console.WriteLine("Your total cost: {0}\nNumber of Days {1}", totalCost, days);
-                    //insert a saveState() function here
+
+                    //saving the current transaction
+                    //save(data, garageFilePath);
                     Console.WriteLine("Press any key to go back to the main menu.");
                     Console.ReadKey();
-                    //check = true;
                     break;
                 }
                 else if (answer == 'n' || answer == 'N')
@@ -325,9 +372,8 @@ namespace Lawrider_car_rental_system
                     Console.WriteLine("Please enter a valid answer Y or N");
                 }
             } while (answer == ' ' || answer != 'n' || answer != 'N' || answer != 'y' || answer != 'Y');
-
+           
         }
-
 
         static List<string> GetKeyFromValue(string valueVar, Dictionary<string, Vehicle> searchDict)
         {
@@ -343,7 +389,7 @@ namespace Lawrider_car_rental_system
                 }
             }
             return listOfKeys;
-        }           //overload for filtering by make
+        }           //overload for filtering by value
 
         static List<string> GetKeyFromValue(Dictionary<string, Vehicle> searchDict, int min, int max)           //overload for filtering by int range
         {
@@ -525,42 +571,6 @@ namespace Lawrider_car_rental_system
             } while (input == "");
 
             return input;
-        }
-
-        static Dictionary<string, Vehicle> loadGarageData(string file)            //load the data from the database
-        {
-            //file = garageFileName;
-            string filePath = @"files/" + file;
-
-            if (!File.Exists(filePath))           //checking if file exist and copying from backup if not
-            {
-                fileExistCheckAndCreate();
-            }
-
-            Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>();
-            StreamReader input = new StreamReader(filePath);
-
-            while (!input.EndOfStream)
-            {
-                string line = input.ReadLine();
-                if (line != "")
-                {
-
-                    string[] valuesArray = line.Split(',');
-                    try             //if there is an exception in the loading of the file the execution will continue
-                    {
-                        loadMe[valuesArray[1]] = new Vehicle(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), decimal.Parse(valuesArray[3]), int.Parse(valuesArray[4]), bool.Parse(valuesArray[5]), decimal.Parse(valuesArray[6]));
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                    //Console.WriteLine(loadMe[valuesArray[0]].getMake);
-                }
-
-            }
-            input.Close();
-            return loadMe;
         }
 
         static char readChar(string prompt, string error)         //come back and fix the int issue
