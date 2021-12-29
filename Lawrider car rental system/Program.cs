@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Lawrider_car_rental_system
 {
-    [Serializable]
+
     class Vehicle
     {
         private string make;
@@ -237,30 +236,15 @@ namespace Lawrider_car_rental_system
 
             } while (choice != 2);
         }
-        public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false)
-        {
-            using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create))
-            {
-                var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                binaryFormatter.Serialize(stream, objectToWrite);
-            }
-        }
 
         static void save(Dictionary<string, Vehicle> data, string filePath)
         {
-            FileStream myFile = File.Create(filePath);
-            BinaryFormatter binary = new BinaryFormatter();
-            binary.Serialize(myFile, data);
-            myFile.Close();
+            
         }
 
-        static Dictionary<string, Vehicle> load(string filePath)
+        static void load(string filePath)
         {
-            BinaryFormatter binary = new BinaryFormatter();
-            FileStream myFile = File.OpenRead(filePath);
-            Dictionary<string, Vehicle> loadedData = (Dictionary<string, Vehicle>) binary.Deserialize(myFile);
-            myFile.Close();
-            return loadedData;
+            
         }
 
         static Dictionary<string, Vehicle> loadGarageData(Dictionary<string, Vehicle> data, string file)            //load the data from the database
@@ -273,7 +257,7 @@ namespace Lawrider_car_rental_system
                 fileExistCheckAndCreate();
             }
 
-            //the code below calls a function which deserialises the file
+            //the code below calls a function which loads the file
             Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>(); //load(filePath);
             StreamReader input = new StreamReader(filePath);
 
