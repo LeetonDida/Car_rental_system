@@ -15,7 +15,7 @@ namespace Lawrider_car_rental_system
         private decimal fuelCapacity;
         private bool avilableState;
 
-        
+
         public Vehicle(string make, string model, int year, decimal cost, int suitCases, bool state, decimal fuelCapacity)
         {
             this.make = make;
@@ -94,7 +94,7 @@ namespace Lawrider_car_rental_system
             do
             {
                 Dictionary<string, Vehicle> data = new Dictionary<string, Vehicle>();
-                
+
                 data = loadGarageData(data, garageFileName);
                 //save(data, garageFilePath);
                 displayMainMenu();
@@ -174,7 +174,7 @@ namespace Lawrider_car_rental_system
 
                             } while (maxCapacity < minCapacity || maxCapacity > MaxFuelCapacity || minCapacity < MinFuelCapacity);
 
-                            List<string> keys = GetKeyFromValue(data, decimal.Round( maxCapacity), decimal.Round(minCapacity), filter);
+                            List<string> keys = GetKeyFromValue(data, decimal.Round(maxCapacity), decimal.Round(minCapacity), filter);
 
                             if (keys.Count == 0)
                             {
@@ -219,32 +219,48 @@ namespace Lawrider_car_rental_system
                         else if (bookingMenuOption == 'E')
                         {
                             List<string> keys = new List<string>(data.Keys);
-                            keys.Sort();
-                            printGarageDictionary(data, keys);
+                            List<string> Newkeys = new List<string>();
 
-                            int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", keys.Count, 1, "Please enter a valid vehicle choice.") - 1;
+                            //loop to get keys of avilable cars 
+                            int keySize = data.Keys.Count;
+                            for (int i = 0; i < keySize; ++i)
+                            {
+                                //if the vehicle`s avilability sttate is true, then it is inserted into the Newkeys list
+                                if (data[keys[i]].getSetAvilableState == true)
+                                {
+                                    Newkeys.Add(keys[i]);
+                                }
+                            }
+
+                            Newkeys.Sort();
+                            printGarageDictionary(data, Newkeys);
+
+                            int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", Newkeys.Count, 1, "Please enter a valid vehicle choice.") - 1;
                             int days = numOfDays();
-                            decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
-                            concludeBooking(data, keys, vehicleChoice, totalCost, days);
+                            decimal totalCost = calculateCost(data, Newkeys, vehicleChoice, days);
+                            concludeBooking(data, Newkeys, vehicleChoice, totalCost, days);
                         }
                         else if (bookingMenuOption == 'F')
                         {
                             continue;
                         }
-                            break;
+                        break;
                 }
 
             } while (choice != 2);
         }
 
-        static void save(Dictionary<string, Vehicle> data, string filePath)
+        static void saveGarageData(Dictionary<string, Vehicle> data, string filePath)
         {
-            
-        }
-
-        static void load(string filePath)
-        {
-            
+            //List<string> dataToSave = new List<string>();
+            string dataToSave = "";
+            foreach (string keyVar in data.Keys)
+            {
+                //add dictionary values into an array
+                dataToSave += data[keyVar].getMake + "," + data[keyVar].getModel + "," + data[keyVar].getYear + "," + data[keyVar].getCost + "," + data[keyVar].getSuitCases + "," + data[keyVar].getSetAvilableState + "," + data[keyVar].getFuelCapacity + "\n";
+            }
+            //write the array into the file
+            File.WriteAllText(filePath, dataToSave);
         }
 
         static Dictionary<string, Vehicle> loadGarageData(Dictionary<string, Vehicle> data, string file)            //load the data from the database
@@ -340,7 +356,7 @@ namespace Lawrider_car_rental_system
                     Console.WriteLine("Your total cost: {0}\nNumber of Days {1}", totalCost, days);
 
                     //saving the current transaction
-                    //save(data, garageFilePath);
+                    saveGarageData(data, garageFilePath);
                     Console.WriteLine("Press any key to go back to the main menu.");
                     Console.ReadKey();
                     break;
@@ -356,7 +372,7 @@ namespace Lawrider_car_rental_system
                     Console.WriteLine("Please enter a valid answer Y or N");
                 }
             } while (answer == ' ' || answer != 'n' || answer != 'N' || answer != 'y' || answer != 'Y');
-           
+
         }
 
         static List<string> GetKeyFromValue(string valueVar, Dictionary<string, Vehicle> searchDict)
@@ -366,10 +382,14 @@ namespace Lawrider_car_rental_system
             //loop to get keys from values into a list
             foreach (string keyVar in searchDict.Keys)
             {
-                string valueFomKey = searchDict[keyVar].getMake;
-                if (valueFomKey == valueVar)
+                //if the vehicle`s avilability sttate is true, then it is inserted into the keys
+                if (searchDict[keyVar].getSetAvilableState == true)
                 {
-                    listOfKeys.Add(keyVar);
+                    string valueFomKey = searchDict[keyVar].getMake;
+                    if (valueFomKey == valueVar)
+                    {
+                        listOfKeys.Add(keyVar);
+                    }
                 }
             }
             return listOfKeys;
@@ -382,10 +402,14 @@ namespace Lawrider_car_rental_system
             //loop to get keys from values into a list
             foreach (string keyVar in searchDict.Keys)
             {
-                int valueFomKey = searchDict[keyVar].getYear;
-                if (valueFomKey <= (int)max && valueFomKey >= (int)min)
+                //if the vehicle`s avilability sttate is true, then it is inserted into the keys
+                if (searchDict[keyVar].getSetAvilableState == true)
                 {
-                    listOfKeys.Add(keyVar);
+                    int valueFomKey = searchDict[keyVar].getYear;
+                    if (valueFomKey <= (int)max && valueFomKey >= (int)min)
+                    {
+                        listOfKeys.Add(keyVar);
+                    }
                 }
             }
             return listOfKeys;
@@ -408,9 +432,13 @@ namespace Lawrider_car_rental_system
                     valueFomKey = decimal.Round(searchDict[keyVar].getCost);
                 }
 
-                if (valueFomKey <= max && valueFomKey >= min)
+                //if the vehicle`s avilability sttate is true, then it is inserted into the keys
+                if (searchDict[keyVar].getSetAvilableState == true)
                 {
-                    listOfKeys.Add(keyVar);
+                    if (valueFomKey <= max && valueFomKey >= min)
+                    {
+                        listOfKeys.Add(keyVar);
+                    }
                 }
             }
             return listOfKeys;
@@ -446,10 +474,11 @@ namespace Lawrider_car_rental_system
         {
             Console.WriteLine("Make     | " + " Model     | " + "Year     | " + "Fuel capacity     | " + "Suit cases     | " + "Cost/day |");
             int count = key.Count;
+            key.Sort();
 
             for (int i = 0; i < count; ++i)
             {
-                Console.WriteLine(i + 1 + ") " + searchDict[key[i]].getMake + "   |  " + searchDict[key[i]].getModel + "    | " + searchDict[key[i]].getYear + "     |  " + searchDict[key[i]].getFuelCapacity + "             |  " + searchDict[key[i]].getSuitCases + "            |  " + searchDict[key[i]].getCost);
+                    Console.WriteLine(i + 1 + ") " + searchDict[key[i]].getMake + "   |  " + searchDict[key[i]].getModel + "    | " + searchDict[key[i]].getYear + "     |  " + searchDict[key[i]].getFuelCapacity + "             |  " + searchDict[key[i]].getSuitCases + "            |  " + searchDict[key[i]].getCost);
             }
         }
 
