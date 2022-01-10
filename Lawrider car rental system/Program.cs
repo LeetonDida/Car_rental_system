@@ -78,9 +78,90 @@ namespace Lawrider_car_rental_system
         }
     }
 
+    class Users
+    {
+        private string firstName;
+        private string secondName;
+        private int age;
+        private string email;
+        private string gender;
+        private double phoneNumber;
+        private string address;
+        private string password;
+        private bool bookingState;
+
+        public Users(string firstName, string secondName, int age, string email, string gender, double phoneNumber, string addres, string password, bool state = false)
+        {
+            this.firstName = firstName;
+            this.secondName = secondName;
+            this.age = age;
+            this.email = email;
+            this.gender = gender;
+            this.phoneNumber = phoneNumber;
+            this.address = addres;
+            this.password = password;
+            this.bookingState = state;
+        }
+
+        public string getFirstName
+        {
+            get => firstName;
+            set => this.firstName = value;
+        }
+
+        public string getSecondName
+        {
+            get => secondName;
+            set => this.secondName = value;
+        }
+
+        public int getAge
+        {
+            get => age;
+            set => this.age = value;
+        }
+
+        public string getEmail
+        {
+            get => email;
+            set => this.email = value;
+        }
+
+        public string getGender
+        {
+            get => gender;
+            set => this.gender = value;
+        }
+
+        public double getPhoneNumber
+        {
+            get => phoneNumber;
+            set => this.phoneNumber = value;
+        }
+
+        public string getAddress
+        {
+            get => address;
+            set => this.address = value;
+        }
+
+        public string getPassword
+        {
+            get => password;
+            set => this.password = value;
+        }
+
+        public bool getBookingState
+        {
+            get => bookingState;
+            set => this.bookingState = value;
+        }
+    }
+
     class Program
     {
         const string garageFileName = "garage.txt";
+        const string usersFileName = "users.txt";
         const int MaximumVehicleYears = 2012;
         const int MinimumVehicleYears = 1983;
         const decimal MaxFuelCapacity = 39.86m;
@@ -88,171 +169,513 @@ namespace Lawrider_car_rental_system
         const decimal MaxPrice = 236.252m;
         const decimal MinPrice = 11.548m;
         const string garageFilePath = @"files/" + garageFileName;
+        public static string currentUser;
+
         static void Main()
         {
+
             int choice = 0;
+            char loginMenuChoice;
+            string userKey = "";
+            bool loginCheck = false;
+            Dictionary<string, Users> users = new Dictionary<string, Users>();
+            users = loadUserData(usersFileName);
             do
             {
-                Dictionary<string, Vehicle> data = new Dictionary<string, Vehicle>();
-
-                data = loadGarageData(data, garageFileName);
-                //save(data, garageFilePath);
-                displayMainMenu();
-                choice = readInt("Choose an option between {0} and {1}", 2, 1, "Please enter a valid choice from the menu above.");
-
-                switch (choice)
+                loginMenuChoice = displayLoginMenu();
+                loginMenuChoice = char.ToUpper(loginMenuChoice);
+                switch (loginMenuChoice)
                 {
-                    case 1:
-                        char bookingMenuOption = bookAVehicleMenu();
-
-                        if (bookingMenuOption == 'A')
+                    case 'A':
+                        userKey = login(users);
+                        if(userKey != "")
                         {
-                            string make = readString("Enter the prefered vehicle make: ", "Please enter a vehicle make.").Trim();
-                            string capitalizedMake = char.ToUpper(make[0]) + make.Substring(1);     //capitalization code modified from stackoverflow (Diego 09/11/2010)
-                            List<string> keys = GetKeyFromValue(capitalizedMake, data);
-                            if (keys.Count == 0)
-                            {
-                                Console.WriteLine("Sorry we do not have your desired vehicle make, please search for another one.\n");
-                                continue;
-                            }
-                            else
-                            {
-                                printGarageDictionary(data, keys);
-                            }
-
-                            int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", keys.Count, 1, "Please enter a valid vehicle choice.") - 1;
-
-                            //if the entered vehicle is not avilable in the keys the loop will restart
-                            if (!checkKey(data, keys, vehicleChoice, "Sorry we do not have your desired vehicle make, please search for another one.\n"))
-                            {
-                                continue;
-                            }
-
-                            int days = numOfDays();
-                            decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
-
-                            concludeBooking(data, keys, vehicleChoice, totalCost, days);
-
-                        }
-                        else if (bookingMenuOption == 'B')
-                        {
-
-                            int minYear;
-                            int maxYear;
-
-                            do
-                            {       //fix this maximum and minimum issue when you get your arse back from work
-                                maxYear = readInt("Please enter maximum year between " + MaximumVehicleYears + " and " + MinimumVehicleYears + ": ", MaximumVehicleYears, MinimumVehicleYears, "Please enter a year between the given bounds.");
-                                minYear = readInt("Please enter minimum year between " + maxYear + " and " + MinimumVehicleYears + ": ", maxYear, MinimumVehicleYears, "Please enter a year between the given bounds.");
-
-                                if (maxYear < minYear)
-                                {
-                                    Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
-                                    continue;
-                                }
-
-                            } while (maxYear < minYear || maxYear > MaximumVehicleYears || minYear < MinimumVehicleYears);
-
-                            List<string> keys = GetKeyFromValue(data, minYear, maxYear);
-                            intRangeFilters(data, keys);
-                        }
-                        else if (bookingMenuOption == 'C')
-                        {
-                            decimal maxCapacity, minCapacity;
-                            string filter = "fuel capacity";
-
-                            do
-                            {
-                                maxCapacity = readDecimal("Please enter a maximum fuel capacity range between " + MaxFuelCapacity + " and " + MinFuelCapacity + ": ", MaxFuelCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
-                                minCapacity = readDecimal("Please enter a minimum fuel capacity range between " + maxCapacity + " and " + MinFuelCapacity + ": ", maxCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
-
-                                if (maxCapacity < minCapacity)
-                                {
-                                    Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
-                                    continue;
-                                }
-
-                            } while (maxCapacity < minCapacity || maxCapacity > MaxFuelCapacity || minCapacity < MinFuelCapacity);
-
-                            List<string> keys = GetKeyFromValue(data, decimal.Round(maxCapacity), decimal.Round(minCapacity), filter);
-
-                            if (keys.Count == 0)
-                            {
-                                Console.WriteLine("Sorry we do not have vehicles between the desired range, please try again with a different range.\n");
-                                continue;
-                            }
-                            else
-                            {
-                                intRangeFilters(data, keys);
-                            }
-
-                        }
-                        else if (bookingMenuOption == 'D')
-                        {
-                            decimal maxPrice, minPrice;
-                            string filter = "price";
-                            do
-                            {
-                                maxPrice = readDecimal("Please enter a maximum price between " + MaxPrice + " and " + MinPrice + ": ", MaxPrice, MinPrice, "Please enter a price between the given bounds.");
-                                minPrice = readDecimal("Please enter a minimum price between " + maxPrice + " and " + MinPrice + ": ", maxPrice, MinPrice, "Please enter a price between the given bounds.");
-
-                                if (maxPrice < minPrice)
-                                {
-                                    Console.WriteLine("Maximum price can not be less than the minimum price. Try reversing your answers.");
-                                    continue;
-                                }
-
-                            } while (maxPrice < minPrice || maxPrice > MaxPrice || minPrice < MinPrice);
-
-                            List<string> keys = GetKeyFromValue(data, decimal.Round(maxPrice), decimal.Round(minPrice), filter);
-
-                            if (keys.Count == 0)
-                            {
-                                Console.WriteLine("Sorry we do not have vehicles between the desired range, please try again with a different range.\n");
-                                continue;
-                            }
-                            else
-                            {
-                                intRangeFilters(data, keys);
-                            }
-                        }
-                        else if (bookingMenuOption == 'E')
-                        {
-                            List<string> keys = new List<string>(data.Keys);
-                            List<string> Newkeys = new List<string>();
-
-                            //loop to get keys of avilable cars 
-                            int keySize = data.Keys.Count;
-                            for (int i = 0; i < keySize; ++i)
-                            {
-                                //if the vehicle`s avilability sttate is true, then it is inserted into the Newkeys list
-                                if (data[keys[i]].getSetAvilableState == true)
-                                {
-                                    Newkeys.Add(keys[i]);
-                                }
-                            }
-
-                            Newkeys.Sort();
-                            printGarageDictionary(data, Newkeys);
-
-                            int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", Newkeys.Count, 1, "Please enter a valid vehicle choice.") - 1;
-                            int days = numOfDays();
-                            decimal totalCost = calculateCost(data, Newkeys, vehicleChoice, days);
-                            concludeBooking(data, Newkeys, vehicleChoice, totalCost, days);
-                        }
-                        else if (bookingMenuOption == 'F')
-                        {
-                            continue;
+                            loginCheck = true;
                         }
                         break;
+                    case 'B':
+                        register(users);
+                        break;
+                    case 'C':
+                        forgotPassword(users);
+                        break;
+                    case 'D':
+                        Environment.Exit(0);
+                        break;
+                    default:
+                        Console.WriteLine("Please enter a valid option from the given options above");
+                        break;
                 }
+            } while (loginMenuChoice == 'D' || loginCheck == false);
 
-            } while (choice != 2);
+
+            //----------------------------------------------------------------------------------------------FROM HERE ITS THE MAIN PROGRAM LOOP--------------------------------------------------------------------------------------------------------------
+            if (loginCheck)
+            {
+                do
+                {
+                    Dictionary<string, Vehicle> data = new Dictionary<string, Vehicle>();
+
+
+                    data = loadGarageData(garageFileName);
+                    displayMainMenu();
+                    choice = readInt("Choose an option between {0} and {1}", 3, 1, "Please enter a valid choice from the menu above.");
+
+                    switch (choice)
+                    {
+                        case 1:
+                            char bookingMenuOption = bookAVehicleMenu();
+
+                            if (bookingMenuOption == 'A')
+                            {
+                                string make = readString("Enter the prefered vehicle make: ", "Please enter a vehicle make.").Trim();
+                                string capitalizedMake = char.ToUpper(make[0]) + make.Substring(1);     //capitalization code modified from stackoverflow (Diego 09/11/2010)
+                                List<string> keys = GetKeyFromValue(capitalizedMake, data);
+                                if (keys.Count == 0)
+                                {
+                                    Console.WriteLine("Sorry we do not have your desired vehicle make, please search for another one.\n");
+                                    continue;
+                                }
+                                else
+                                {
+                                    printGarageDictionary(data, keys);
+                                }
+
+                                int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", keys.Count, 1, "Please enter a valid vehicle choice.") - 1;
+
+                                //if the entered vehicle is not avilable in the keys the loop will restart
+                                if (!checkKey(data, keys, vehicleChoice, "Sorry we do not have your desired vehicle make, please search for another one.\n"))
+                                {
+                                    continue;
+                                }
+
+                                int days = numOfDays();
+                                decimal totalCost = calculateCost(data, keys, vehicleChoice, days);
+
+                                concludeBooking(data, keys, vehicleChoice, totalCost, days);
+
+                            }
+                            else if (bookingMenuOption == 'B')
+                            {
+
+                                int minYear;
+                                int maxYear;
+
+                                do
+                                {       //fix this maximum and minimum issue when you get your arse back from work
+                                    maxYear = readInt("Please enter maximum year between " + MaximumVehicleYears + " and " + MinimumVehicleYears + ": ", MaximumVehicleYears, MinimumVehicleYears, "Please enter a year between the given bounds.");
+                                    minYear = readInt("Please enter minimum year between " + maxYear + " and " + MinimumVehicleYears + ": ", maxYear, MinimumVehicleYears, "Please enter a year between the given bounds.");
+
+                                    if (maxYear < minYear)
+                                    {
+                                        Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
+                                        continue;
+                                    }
+
+                                } while (maxYear < minYear || maxYear > MaximumVehicleYears || minYear < MinimumVehicleYears);
+
+                                List<string> keys = GetKeyFromValue(data, minYear, maxYear);
+                                intRangeFilters(data, keys);
+                            }
+                            else if (bookingMenuOption == 'C')
+                            {
+                                decimal maxCapacity, minCapacity;
+                                string filter = "fuel capacity";
+
+                                do
+                                {
+                                    maxCapacity = readDecimal("Please enter a maximum fuel capacity range between " + MaxFuelCapacity + " and " + MinFuelCapacity + ": ", MaxFuelCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
+                                    minCapacity = readDecimal("Please enter a minimum fuel capacity range between " + maxCapacity + " and " + MinFuelCapacity + ": ", maxCapacity, MinFuelCapacity, "Please enter a fuel capacity range between the given bounds.");
+
+                                    if (maxCapacity < minCapacity)
+                                    {
+                                        Console.WriteLine("Maximum year can not be less than the minimum year. Try reversing your answers.");
+                                        continue;
+                                    }
+
+                                } while (maxCapacity < minCapacity || maxCapacity > MaxFuelCapacity || minCapacity < MinFuelCapacity);
+
+                                List<string> keys = GetKeyFromValue(data, decimal.Round(maxCapacity), decimal.Round(minCapacity), filter);
+
+                                if (keys.Count == 0)
+                                {
+                                    Console.WriteLine("Sorry we do not have vehicles between the desired range, please try again with a different range.\n");
+                                    continue;
+                                }
+                                else
+                                {
+                                    intRangeFilters(data, keys);
+                                }
+
+                            }
+                            else if (bookingMenuOption == 'D')
+                            {
+                                decimal maxPrice, minPrice;
+                                string filter = "price";
+                                do
+                                {
+                                    maxPrice = readDecimal("Please enter a maximum price between " + MaxPrice + " and " + MinPrice + ": ", MaxPrice, MinPrice, "Please enter a price between the given bounds.");
+                                    minPrice = readDecimal("Please enter a minimum price between " + maxPrice + " and " + MinPrice + ": ", maxPrice, MinPrice, "Please enter a price between the given bounds.");
+
+                                    if (maxPrice < minPrice)
+                                    {
+                                        Console.WriteLine("Maximum price can not be less than the minimum price. Try reversing your answers.");
+                                        continue;
+                                    }
+
+                                } while (maxPrice < minPrice || maxPrice > MaxPrice || minPrice < MinPrice);
+
+                                List<string> keys = GetKeyFromValue(data, decimal.Round(maxPrice), decimal.Round(minPrice), filter);
+
+                                if (keys.Count == 0)
+                                {
+                                    Console.WriteLine("Sorry we do not have vehicles between the desired range, please try again with a different range.\n");
+                                    continue;
+                                }
+                                else
+                                {
+                                    intRangeFilters(data, keys);
+                                }
+                            }
+                            else if (bookingMenuOption == 'E')
+                            {
+                                List<string> keys = new List<string>(data.Keys);
+                                List<string> Newkeys = new List<string>();
+
+                                //loop to get keys of avilable cars 
+                                int keySize = data.Keys.Count;
+                                for (int i = 0; i < keySize; ++i)
+                                {
+                                    //if the vehicle`s avilability sttate is true, then it is inserted into the Newkeys list
+                                    if (data[keys[i]].getSetAvilableState == true)
+                                    {
+                                        Newkeys.Add(keys[i]);
+                                    }
+                                }
+
+                                Newkeys.Sort();
+                                printGarageDictionary(data, Newkeys);
+
+                                int vehicleChoice = readInt("Enter your vehicle choice from the choices above: ", Newkeys.Count, 1, "Please enter a valid vehicle choice.") - 1;
+                                int days = numOfDays();
+                                decimal totalCost = calculateCost(data, Newkeys, vehicleChoice, days);
+                                concludeBooking(data, Newkeys, vehicleChoice, totalCost, days);
+                            }
+                            else if (bookingMenuOption == 'F')
+                            {
+                                continue;
+                            }
+                            break;
+                        case 2:
+                            changeCustomerDetails(users, userKey);
+                            break;
+                        case 3:
+                            Environment.Exit(0);
+                            break;
+                        default:
+                            Console.WriteLine("Please enter a valid option from the given options above");
+                            break;
+                    }
+
+                } while (choice != 3);
+            }
+
         }
 
+
+        static Dictionary<string, Users> loadUserData(string file)
+        {
+            //file = garageFileName;
+            string filePath = @"files/" + file;
+
+            if (!File.Exists(filePath))           //checking if file exist and copying from backup if not
+            {
+                fileExistCheckAndCreate(file);
+            }
+
+            Dictionary<string, Users> loadMe = new Dictionary<string, Users>();
+
+            //the code below calls a function which loads the file
+            StreamReader input = new StreamReader(filePath);
+
+            while (!input.EndOfStream)
+            {
+                string line = input.ReadLine();
+                if (line != "")
+                {
+
+                    string[] valuesArray = line.Split(',');
+
+                    try
+                    {
+                        loadMe[valuesArray[3]] = new Users(valuesArray[0], valuesArray[1], int.Parse(valuesArray[2]), valuesArray[3], valuesArray[4], double.Parse(valuesArray[5].Trim()), valuesArray[6], valuesArray[7], bool.Parse(valuesArray[8]));
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+            }
+            input.Close();
+
+            return loadMe;
+        }
+
+        static char displayLoginMenu()
+        {
+            Console.WriteLine("-----------------------------------------------------------");
+            Console.WriteLine("                  * LOGIN MENU *");
+            Console.WriteLine("A) Login");
+            Console.WriteLine("B) Register");
+            Console.WriteLine("C) Forgot password");
+            Console.WriteLine("D) Exit");
+            Console.WriteLine("-----------------------------------------------------------");
+
+            char choice = readChar("Enter an option: ", "Please enter one character from the above options.");
+            return char.ToUpper(choice);
+        }
+
+        static string login(Dictionary<string, Users> data)
+        {
+            string email = readString("Enter your email: ", "Please enter a valid email.");
+            string Password = readString("Enter your password: ", "Please enter a valid password");
+
+            try
+            {
+                if ((data[email].getPassword == Password) && data.ContainsKey(email))
+                {
+                    
+                    setCurrentUser(data, email);
+                }
+                else
+                {
+                    Console.WriteLine("Sorry, we do not have an account with the entered details, please try again.");
+                    email = "";
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Sorry, we do not have an account with the entered details, please try again.");
+                email = "";
+            }
+
+            return email;
+        }
+
+        static void setCurrentUser(Dictionary<string, Users> data, string email)
+        {
+            currentUser = data[email].getFirstName + " " + data[email].getSecondName;
+        }
+
+        static double phoneNumberValidation()
+        {
+            string phone; int count;
+            do
+            {
+                count = 0;
+                phone = readString("Enter your phone number: ", "Please enter a valid phone number").Trim();
+
+                foreach (char ch in phone)
+                {
+                    count++;
+                }
+
+                if (count > 10 || count < 10)
+                {
+                    Console.WriteLine("Please enter a valid phone number.");
+                }
+            } while (count != 10);
+            return double.Parse(phone);
+        }           // //phone number validation
+
+        static string genderValidation()
+        {
+            char choice;
+            string gender = "";
+            do
+            {
+                choice = readChar("Enter your gender (M/F): ", "Please enter between the options above");
+                char.ToUpper(choice);
+                if (choice == 'M')
+                {
+                    gender = "Male";
+                }
+                else if (choice == 'F')
+                {
+                    gender = "Female";
+                }
+                else
+                {
+                    Console.WriteLine("Please enter between the options above");
+                }
+            } while (gender == "");
+            return gender;
+        }           //gender validation
+
+        static string emailValidation()
+        {
+            string email;
+            bool check = false;
+            string domainName;
+            do
+            {
+                email = readString("Enter your email: ", "Please enter a valid email address").Trim();
+                try
+                {
+                    domainName = email.Substring(email.Length - 4);         //code adapted from stack overflow (thestar 20/2017)
+                    foreach (char ch in email)
+                    {
+                        if (ch == '@' && (domainName == ".com" || domainName == ".net" || domainName == ".gov" || domainName == ".org"))
+                        {
+                            check = true;
+                        }
+                    }
+                }
+                catch
+                {
+                    if (check == false)
+                    {
+                        Console.WriteLine("Please enter a valid Email address.");
+                    }
+                }
+            } while (check == false);
+            return email;
+        }           ////email validation
+
+        static void register(Dictionary<string, Users> data)
+        {
+            string joinedString = "";
+            string email = emailValidation();
+            if (!data.ContainsKey(email))
+            {
+                string firstName = readString("Enter your first name: ", "Please enter a valid first name");
+                string secondName = readString("Enter your second name: ", "Please enter a valid second name");
+                int age = readInt("Enter your age: ", 85, 15, "Please enter a valid age (Minimum 16 yrs)");
+                string gender = genderValidation();
+                double phoneNumber = phoneNumberValidation();
+                string address = readString("Enter your address post code: ", "Please enter a valid postcode");
+                string password = readString("Please enter a your password: ", "Please enter a valid password");
+
+                //adding to dictionary for use in runtime
+                data[email] = new Users(firstName, secondName, age, email, gender, phoneNumber, address, password);
+
+                //adding into our database text file for later use
+                joinedString = firstName + ',' + secondName + ',' + age + ',' + email + ',' + gender + ',' + phoneNumber + ',' + address + ',' + password + ',' + data[email].getBookingState;
+                StreamWriter writter = new StreamWriter(@"files/" + usersFileName, append: true);
+                writter.WriteLine("\n" + joinedString);
+                writter.Close();
+
+                Console.WriteLine("Account Created successfully!!!");
+            }
+            else
+            {
+                Console.WriteLine("You already have an account please login, or choose forgot password if you have forgotten your password.");
+            }
+        }
+
+        static void saveUserDetails(Dictionary<string, Users> data, string path = @"files/" + usersFileName)
+        {
+            string dataToSave = "";
+            foreach (string keyVar in data.Keys)
+            {
+                //add dictionary values into an array
+                dataToSave += data[keyVar].getFirstName + "," + data[keyVar].getSecondName + "," + data[keyVar].getAge + "," + data[keyVar].getEmail + "," + data[keyVar].getGender + "," + data[keyVar].getPhoneNumber + "," + data[keyVar].getAddress + "," + data[keyVar].getPassword + "," + data[keyVar].getBookingState + "\n";
+            }
+            //write the text into the file
+            File.WriteAllText(path, dataToSave);
+        }
+        static void forgotPassword(Dictionary<string, Users> data)
+        {
+            string email = readString("Enter your email: ", "Please enter a valid email");
+
+            try
+            {
+
+                double phoneNumber = phoneNumberValidation();
+
+                if ((data[email].getPhoneNumber == phoneNumber && data.ContainsKey(email)))
+                {
+                    string password = readString("Enter a new password: ", "Please enter a password");
+                    //changing the password if email and phone number match
+                    data[email].getPassword = password;
+                    saveUserDetails(data);
+                }
+                else
+                {
+                    Console.WriteLine("Sorry we do not have the associated account with the details you`ve provided");
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Sorry, we do not have an account with the entered details, please try again.");
+            }
+
+
+        }
+
+        static void changeCustomerDetails(Dictionary<string, Users> data, string currentUser)
+        {
+            char choice;
+
+            do
+            {
+                Console.WriteLine("-----------------------------------------------------------");
+                Console.WriteLine("                  * CHANGE MY DETAILS MENU *");
+                Console.WriteLine("A) Name");
+                Console.WriteLine("B) Email");
+                Console.WriteLine("C) Phone number");
+                Console.WriteLine("D) Address");
+                Console.WriteLine("E) Password");
+                Console.WriteLine("F) Back");
+                Console.WriteLine("-----------------------------------------------------------");
+
+                choice = readChar("Enter your choice: ", "Please enter a valid option from the ones above.");
+                switch (choice)
+                {
+
+                    case 'A':
+                        string newName = readString("Enter your new name: ", "Please enter a valid name.");
+                        data[currentUser].getFirstName = newName;
+                        saveUserDetails(data);
+                        Console.WriteLine("Name Changed successfully!!!");
+                        break;
+                    case 'B':
+                        string newEmail = emailValidation();
+                        data[currentUser].getEmail = newEmail;
+                        saveUserDetails(data);
+                        Console.WriteLine("Email Changed successfully!!!");
+                        break;
+                    case 'C':
+                        double newPhoneNumber = phoneNumberValidation();
+                        data[currentUser].getPhoneNumber = newPhoneNumber;
+                        saveUserDetails(data);
+                        Console.WriteLine("Phone number Changed successfully!!!");
+                        break;
+                    case 'D':
+                        string newAddress = readString("Enter your new address: ", "Please enter a valid address");
+                        data[currentUser].getAddress = newAddress;
+                        saveUserDetails(data);
+                        Console.WriteLine("Address Changed successfully!!!");
+                        break;
+                    case 'E':
+                        forgotPassword(data);
+                        Console.WriteLine("Password Changed successfully!!!");
+                        break;
+                    default:
+                        Console.WriteLine("Please enter an option from the options above.");
+                        break;
+                }
+            } while (choice != 'F');
+
+        }
+
+
+
+
+        //----------------------------------------------------------------------------------------- DO NOT TOUCH ANYTHING BELOW THIS POINT -----------------------------------------------------------------------------------------------------------------------------
         static void saveGarageData(Dictionary<string, Vehicle> data, string filePath)
         {
-            //List<string> dataToSave = new List<string>();
             string dataToSave = "";
             foreach (string keyVar in data.Keys)
             {
@@ -263,18 +686,20 @@ namespace Lawrider_car_rental_system
             File.WriteAllText(filePath, dataToSave);
         }
 
-        static Dictionary<string, Vehicle> loadGarageData(Dictionary<string, Vehicle> data, string file)            //load the data from the database
+
+        static Dictionary<string, Vehicle> loadGarageData(string file)            //load the data from the database
         {
             //file = garageFileName;
             string filePath = @"files/" + file;
 
             if (!File.Exists(filePath))           //checking if file exist and copying from backup if not
             {
-                fileExistCheckAndCreate();
+                fileExistCheckAndCreate(file);
             }
 
+            Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>();
+
             //the code below calls a function which loads the file
-            Dictionary<string, Vehicle> loadMe = new Dictionary<string, Vehicle>(); //load(filePath);
             StreamReader input = new StreamReader(filePath);
 
             while (!input.EndOfStream)
@@ -296,6 +721,7 @@ namespace Lawrider_car_rental_system
 
             }
             input.Close();
+
             return loadMe;
         }
         static void intRangeFilters(Dictionary<string, Vehicle> data, List<string> keys)
@@ -450,10 +876,10 @@ namespace Lawrider_car_rental_system
             return totalCost;
         }
 
-        static void fileExistCheckAndCreate()           //method to copy back up database file if its not avilable
+        static void fileExistCheckAndCreate(string file)           //method to copy back up database file if its not avilable
         {
-            string sourceDirectory = @"back up/" + garageFileName;
-            string destinationDirectory = @"files/" + garageFileName;
+            string sourceDirectory = @"back up/" + file;
+            string destinationDirectory = @"files/" + file;
 
             {
                 Console.WriteLine("Something went wrong. Press any key to continue report the issue and continue.");
@@ -478,7 +904,7 @@ namespace Lawrider_car_rental_system
 
             for (int i = 0; i < count; ++i)
             {
-                    Console.WriteLine(i + 1 + ") " + searchDict[key[i]].getMake + "   |  " + searchDict[key[i]].getModel + "    | " + searchDict[key[i]].getYear + "     |  " + searchDict[key[i]].getFuelCapacity + "             |  " + searchDict[key[i]].getSuitCases + "            |  " + searchDict[key[i]].getCost);
+                Console.WriteLine(i + 1 + ") " + searchDict[key[i]].getMake + "   |  " + searchDict[key[i]].getModel + "    | " + searchDict[key[i]].getYear + "     |  " + searchDict[key[i]].getFuelCapacity + "             |  " + searchDict[key[i]].getSuitCases + "            |  " + searchDict[key[i]].getCost);
             }
         }
 
@@ -487,7 +913,8 @@ namespace Lawrider_car_rental_system
             Console.WriteLine("-----------------------------------------------------------");
             Console.WriteLine("                         * MENU *");
             Console.WriteLine("1) Book a vehicle");
-            Console.WriteLine("2) Logout/Exit");
+            Console.WriteLine("2) Change my details");
+            Console.WriteLine("3) Logout/Exit");
             Console.WriteLine("-----------------------------------------------------------");
         }
 
@@ -586,7 +1013,7 @@ namespace Lawrider_car_rental_system
             return input;
         }
 
-        static char readChar(string prompt, string error)         //come back and fix the int issue
+        static char readChar(string prompt, string error)
         {
             char op = ' ';
             string option = " ";
